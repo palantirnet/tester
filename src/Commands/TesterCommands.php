@@ -12,7 +12,9 @@ use Drupal\Core\Extension\ModuleInstallerInterface;
 use Drupal\Core\Http\ClientFactory;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Url;
 use Drupal\tester\TesterPluginManager;
+use Drupal\user\Entity\User;
 use Drush\Commands\DrushCommands;
 use GuzzleHttp\Cookie\CookieJar;
 
@@ -160,6 +162,8 @@ class TesterCommands extends DrushCommands {
    *   The user name to log in with prior to the test (optional).
    * @option password
    *   The user password to log in with prior to the test (required if --user is set).
+   * @option errors
+   *   If set, only errors will be reported.
    *
    * @command tester:crawl
    * @aliases tester-crawl, tc
@@ -171,6 +175,7 @@ class TesterCommands extends DrushCommands {
    * @usage drush tester:crawl --test=all --limit=10 --menus=admin,main,header --user=[USERNAME] --password=[PASSWORD]
    * @usage drush tester:crawl example.com
    * @usage drush tester:crawl example.com --test=node
+   * @usage drush tester:crawl example.com --test=node --errors
    *
    * @field-labels
    *   path: Path
@@ -181,7 +186,7 @@ class TesterCommands extends DrushCommands {
    * @return \Consolidation\OutputFormatters\StructuredData\RowsOfFields
    *   Table output.
    */
-  public function crawl($base_url = NULL, array $options = ['test' => NULL, 'limit' => 500, 'menus' => 'main,footer,admin', 'admin' => FALSE, 'user' => NULL, 'password' => NULL]) {
+  public function crawl($base_url = NULL, array $options = ['test' => NULL, 'limit' => 500, 'menus' => 'main,footer,admin', 'admin' => FALSE, 'user' => NULL, 'password' => NULL, 'errors' => FALSE]) {
     $rows = [];
     $this->adminUser = $this->entityTypeManager->getStorage('user')->load(1);
     $this->setUp();
@@ -217,14 +222,23 @@ class TesterCommands extends DrushCommands {
     else {
       // Login, if requested.
       if ($options['admin']) {
-        $this->io()->success($this->t("Logging in as 'admin' / 'admin'..."));
-        $options['form_params'] = [
-          'name' => 'admin',
-          'pass' => 'admin',
-          'form_id' => 'user_login_form',
-        ];
-        $this->httpClient->request('POST', $base_url . '/user/login', $options);
-        unset($options['form_params']);
+        $account = User::load(1);
+        $timestamp = \Drupal::time()->getRequestTime();
+        $link = Url::fromRoute(
+          'user.reset.login',
+          [
+            'uid' => $account->id(),
+            'timestamp' => $timestamp,
+            'hash' => user_pass_rehash($account, $timestamp),
+          ],
+          [
+            'absolute' => true,
+            'query' => [],
+            'language' => \Drupal::languageManager()->getLanguage($account->getPreferredLangcode()),
+            'https' => false,
+          ]
+        )->toString();
+        $this->httpClient->request('GET', $link, $options);
       }
       elseif ($options['user'] && $options['password']) {
         $this->io()->success($this->t("Logging in as '" . $options['user'] . "' using password..."));
@@ -249,22 +263,25 @@ class TesterCommands extends DrushCommands {
 
         // @todo Move to a render function?
         // @todo Alternate formatting?
-        $row = [
-          'path' => $path,
-          'status' => $this->getErrorLog($path, 'response'),
-          'errors' => $this->getErrorLog($path, 'count') ?: 0,
-        ];
-        $rows[] = $row;
+        $errors = $this->getErrorLog($path, 'count') ?: 0;
+        if (!$options['errors'] || $errors > 0) {
+          $row = [
+            'path' => $path,
+            'status' => $this->getErrorLog($path, 'response'),
+            'errors' => $errors,
+          ];
+          $rows[] = $row;
 
-        if ($row['errors']) {
-          $rows[]['path'] = '';
-          foreach ($this->getErrorLog($path, 'errors') as $error) {
-            $error_count++;
-            $rows[] = [
-              'path' => ' • ' . trim(strip_tags($error), "."),
-            ];
+          if ($row['errors']) {
+            $rows[]['path'] = '';
+            foreach ($this->getErrorLog($path, 'errors') as $error) {
+              $error_count++;
+              $rows[] = [
+                'path' => ' • ' . trim(strip_tags($error), "."),
+              ];
+            }
+            $rows[]['path'] = '';
           }
-          $rows[]['path'] = '';
         }
       }
 

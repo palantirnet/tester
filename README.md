@@ -19,9 +19,10 @@ While code analysis tools like [Drupal check](https://github.com/mglaman/drupal-
 * Run a test
 * `drush tester-crawl http://example.com`
 * Note that you must supply the URL to the site root. No trailing slash is required.
-* If you are running a default install, the `--admin` flag will log the tester in as user 1 using `admin/admin`.
+* If you are running a default install, the `--admin` flag will log the tester in as user 1 using a one-time login link.
 * You may instead pass a `--user` and `--password` combo to login.
-* For more, run `drush help tc`
+* You may pass the `--errors` flag to only return errors instead of the full crawl list.
+* For more, run `drush help tc`.
 
 The command is aliased to `tc`, so this works as well:
 
@@ -32,7 +33,7 @@ The command is aliased to `tc`, so this works as well:
 The module comes with four sets of base tests:
 
 * Crawl the home page, a 403 page, and a 404 page.
-* Crawl all node pages.
+* Crawl all node pages and node/add pages
 * Crawl all internal menu links that do not require arguments or tokens.
 * Crawl all user pages.
 
