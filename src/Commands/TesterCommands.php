@@ -372,9 +372,9 @@ class TesterCommands extends DrushCommands {
         case "modules":
         default:
           foreach ($extensions as $extension) {
-          }
-          if (!$this->moduleHandler->moduleExists($extension)) {
-            $return = FALSE;
+            if (!$this->moduleHandler->moduleExists($extension)) {
+              $return = FALSE;
+            }
           }
           break;
       }
