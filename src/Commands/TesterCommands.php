@@ -164,6 +164,8 @@ class TesterCommands extends DrushCommands {
    *   The user password to log in with prior to the test (required if --user is set).
    * @option errors
    *   If set, only errors will be reported.
+   * @option verify
+   *   If set, the site must have a valid SSL certificate.
    *
    * @command tester:crawl
    * @aliases tester-crawl, tc
@@ -186,7 +188,7 @@ class TesterCommands extends DrushCommands {
    * @return \Consolidation\OutputFormatters\StructuredData\RowsOfFields
    *   Table output.
    */
-  public function crawl($base_url = NULL, array $options = ['test' => NULL, 'limit' => 500, 'menus' => 'main,footer,admin', 'admin' => FALSE, 'user' => NULL, 'password' => NULL, 'errors' => FALSE]) {
+  public function crawl($base_url = NULL, array $options = ['test' => NULL, 'limit' => 500, 'menus' => 'main,footer,admin', 'admin' => FALSE, 'user' => NULL, 'password' => NULL, 'errors' => FALSE, 'verify' => FALSE]) {
     $rows = [];
     $this->adminUser = $this->entityTypeManager->getStorage('user')->load(1);
     $this->setUp();
@@ -232,10 +234,10 @@ class TesterCommands extends DrushCommands {
             'hash' => user_pass_rehash($account, $timestamp),
           ],
           [
-            'absolute' => true,
+            'absolute' => TRUE,
             'query' => [],
             'language' => \Drupal::languageManager()->getLanguage($account->getPreferredLangcode()),
-            'https' => false,
+            'https' => FALSE,
           ]
         )->toString();
         $this->httpClient->request('GET', $link, $options);
@@ -253,8 +255,11 @@ class TesterCommands extends DrushCommands {
       $this->io()->progressStart(count($urls));
       foreach ($urls as $url) {
         $path = $base_url . $url;
-        $this->setErrorStorage($path);
+        if (!$options['verify']) {
+          $path = str_replace('https:', 'http:', $path);
+        }
 
+        $this->setErrorStorage($path);
         $response = $this->httpClient->request('GET', $path, $options);
         $this->io()->progressAdvance();
 

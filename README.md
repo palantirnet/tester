@@ -18,8 +18,10 @@ While code analysis tools like [Drupal check](https://github.com/mglaman/drupal-
 * `drush en tester`
 * Run a test
 * `drush tester-crawl http://example.com`
-* Note that you must supply the URL to the site root. No trailing slash is required.
-* If you are running a default install, the `--admin` flag will log the tester in as user 1 using a one-time login link.
+* Note that you may supply the URL to the site root. No trailing slash is required.
+  * If you do not supply a URL, the default `$base_url` value will be used.
+  * Note that local sites (such as DDEV) may not support HTTPS using cURL due to invalid certificates. By default, tester will run using HTTP. To force HTTPS, pass the `--verify` flag.
+* If user 1 is active on the site, the `--admin` flag will log the tester in as user 1 using a one-time login link.
 * You may instead pass a `--user` and `--password` combo to login.
 * You may pass the `--errors` flag to only return errors instead of the full crawl list.
 * For more, run `drush help tc`.
