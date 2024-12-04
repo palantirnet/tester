@@ -18,11 +18,18 @@ class NodeTester extends PluginBase implements TesterPluginInterface {
    * {@inheritdoc}
    */
   public function urls(array $options) {
+    $urls = [];
+
     // @todo Figure out how to inject this service.
+    $storage = \Drupal::entityTypeManager()->getStorage('node_type');
+    $node_types = $storage->loadMultiple();
+    foreach ($node_types as $type) {
+      $urls[] = '/node/add/' . $type->id();
+    }
+
     $storage = \Drupal::entityTypeManager()->getStorage('node');
     $nodes = $storage->loadMultiple();
 
-    $urls = [];
     foreach ($nodes as $node) {
       $urls[] = $node->toUrl()->toString();
     }
