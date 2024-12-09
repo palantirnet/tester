@@ -235,6 +235,10 @@ class TesterCommands extends DrushCommands {
       'http_errors' => FALSE,
       'cookies' => $cookie_jar,
     ];
+    // Set an explicit http version for the request.
+    if (!$options['version']) {
+      $options['version'] = 1.1;
+    }
     $error_count = 0;
     if (empty($urls)) {
       return $this->io()->error($this->t('No valid plugins were found.'));
