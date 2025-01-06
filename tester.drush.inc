@@ -5,8 +5,8 @@
  * Tester module drush commands.
  */
 
-define(TESTER_BARS,  '==================================================');
-define(TESTER_LINE, '--------------------------------------------------');
+const TESTER_BARS =  '==================================================';
+const TESTER_LINE = '--------------------------------------------------';
 
 /**
  * Implements hook_drush_command().
