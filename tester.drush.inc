@@ -195,7 +195,7 @@ function tester_dblog_report() {
     return drush_user_abort();
   }
 
-  else if ($type == 1) {
+  else if ($type === 1) {
     drush_print(TESTER_LINE);
     drush_print('Complete error report: ' . count($errors) . ' errors');
     drush_print(TESTER_LINE);
@@ -208,7 +208,7 @@ function tester_dblog_report() {
     drush_print_table($rows, TRUE);
   }
   // Unique errors.
-  else if ($type == 2) {
+  else if ($type === 2 || $type === 3) {
     $errors_unique = db_query("SELECT message, location, severity, variables FROM {watchdog} WHERE type = 'php' GROUP BY message")->fetchAll();
 
     drush_print(TESTER_LINE);
@@ -223,7 +223,7 @@ function tester_dblog_report() {
     drush_print_table($rows, TRUE);
   }
   // Summary errors.
-  else {
+  if ($type === 3) {
     drush_print(TESTER_LINE);
     drush_print('Summary error report');
     drush_print(TESTER_LINE);
