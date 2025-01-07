@@ -57,6 +57,7 @@ function drush_tester_crawl($base_path, $type = NULL) {
   $items = tester_tester_info();
   $items += module_invoke_all('tester_info');
   $limit = drush_get_option('limit');
+  
   if (!isset($type) || ($type != 'all' && !isset($items[$type]))) {
     $list = array(1 => 'All');
     foreach ($items as $key => $item) {
@@ -128,30 +129,36 @@ function drush_tester_crawl($base_path, $type = NULL) {
       module_load_include('inc', $item['module'], 'includes/' . $name . '.tester');
     }
 
+    $tests = $function($limit);
     drush_print(TESTER_LINE);
     drush_print($item['description']);
     drush_print(TESTER_LINE);
-    $tests = $function($limit);
+    $results = array(
+      array('URL', 'Response')
+    );
     foreach ($tests as $test) {
-      if (!empty($test['prefix'])) {
-        drush_print(TESTER_LINE);
-        drush_print($test['prefix']);
-        drush_print(TESTER_LINE);
-      }
       foreach ($test['paths'] as $path) {
-        $url = $base_path . $path;
-        drush_print('Testing ' . $url);
+        if (strpos($path, '://') > 0) {
+          $url = $path;
+        }
+        else {
+          $url = $base_path . $path;
+        }
         // @TODO: perhaps just use CURL.
-        drupal_http_request($url);
+        $response = drupal_http_request($url);
+        echo ('.');
         $count++;
-      }
-      if (!empty($test['suffix'])) {
-        drush_print(TESTER_LINE);
-        drush_print($test['suffix']);
-        drush_print(TESTER_LINE);
+        $results[] = array(
+          $url,
+          $response->code,
+        );
       }
     }
   }
+
+  drush_print('');
+  drush_print(TESTER_LINE);
+  drush_print_table($results, TRUE);
 
   drush_print(TESTER_LINE);
   drush_print($count . " pages crawled");
