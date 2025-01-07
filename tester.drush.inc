@@ -209,7 +209,9 @@ function tester_dblog_report() {
   }
   // Unique errors.
   else if ($type === 2 || $type === 3) {
-    $errors_unique = db_query("SELECT message, location, severity, variables FROM {watchdog} WHERE type = 'php' GROUP BY message")->fetchAll();
+    $records = db_query("SELECT message, location, severity, variables FROM {watchdog} WHERE type = 'php'")->fetchAll();
+
+    $errors_unique = tester_process_unique($records);
 
     drush_print(TESTER_LINE);
     drush_print('Unique error report: ' . count($errors_unique) . ' unique errors');
@@ -218,7 +220,7 @@ function tester_dblog_report() {
     $rows[] = array('Location', 'Message');
 
     foreach ($errors_unique as $error) {
-      $rows[] = array($error->location, strip_tags(t($error->message, unserialize($error->variables))));
+      $rows[] = $error;
     }
     drush_print_table($rows, TRUE);
   }
@@ -277,4 +279,18 @@ function tester_tester_info() {
     'dependencies' => array('user'),
   );
   return $items;
+}
+
+
+function tester_process_unique($records) {
+  $errors_unique = array();
+  $error_strings = array();
+  foreach ($records as $record) {
+    $error = trim(strip_tags(t($record->message, unserialize($record->variables))));
+    if (!in_array($error, $error_strings, TRUE)) {
+      $errors_unique[] = array($record->location, $error);
+      $error_strings[] = $error;
+    }
+  }
+  return $errors_unique;
 }
